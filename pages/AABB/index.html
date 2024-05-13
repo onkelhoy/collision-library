@@ -1,0 +1,43 @@
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AABB</title>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "vector": "../../source/vector.js",
+        "rectangle": "../../source/rectangle.js",
+        "line": "../../source/line.js",
+        "polygon": "../../source/polygon.js",
+        "polygon-helper": "../../source/polygon-helper.js",
+        "collision": "../../source/collision.js"
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      background-image: radial-gradient(circle at 50% 50%, rgb(132, 132, 132) 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+
+    button {
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      translate: -50% 0;
+      padding: 1rem 0.5rem;
+    }
+  </style>
+
+  <script defer type="module" src="main.js"></script>
+</head>
+<body>
+  <canvas>Your browser does not support HTML canvas</canvas>
+</body>
+</html>
