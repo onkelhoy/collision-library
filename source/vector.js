@@ -15,21 +15,21 @@ export class Vector {
   }
 
   subtractFrom(b) {
-    const v = Vector.ToVector(b);
+    const v = Vector.toVector(b);
 
     this.x -= v.x;
     this.y -= v.y;
     this.z -= v.z;
   }
   addFrom(b) {
-    const v = Vector.ToVector(b);
+    const v = Vector.toVector(b);
 
     this.x += v.x;
     this.y += v.y;
     this.z += v.z;
   }
   multiplyFrom(b) {
-    const v = Vector.ToVector(b);
+    const v = Vector.toVector(b);
 
     this.x *= v.x;
     this.y *= v.y;
@@ -70,7 +70,7 @@ export class Vector {
   }
   
   // helper function 
-  static ToVector(v) {
+  static toVector(v) {
     if (typeof v === "number") 
     {
       return new Vector(v, v);
@@ -89,13 +89,13 @@ export class Vector {
   }
 
   static Multiply(a, b) {
-    return Vector.Copy(Vector.ToVector(a)).multiplyFrom(b);
+    return Vector.Copy(Vector.toVector(a)).multiplyFrom(b);
   }
   static Add(a, b) {
-    return Vector.Copy(Vector.ToVector(a)).addFrom(b);
+    return Vector.Copy(Vector.toVector(a)).addFrom(b);
   }
   static Subtract(a, b) {
-    const v = Vector.Copy(Vector.ToVector(a));
+    const v = Vector.Copy(Vector.toVector(a));
     v.subtractFrom(b);
     return v;
   }
@@ -116,7 +116,7 @@ export class Vector {
   }
 
   static Draw(v, ctx, color = "black", r = 1) {
-    v = Vector.ToVector(v);
+    v = Vector.toVector(v);
     ctx.beginPath();
       ctx.arc(v.x, v.y, r/2, 0, Math.PI * 2);
       ctx.fillStyle = color;

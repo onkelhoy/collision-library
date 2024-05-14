@@ -1,15 +1,28 @@
-export class Rectangle {
+import { Vector } from "vector";
+
+export class Rectangle extends Vector {
   constructor(x, y, w, h) {
-    this.x = x;
-    this.y = y;
-    this.w = w;
-    this.h = h;
+    super(x, y);
+    if (typeof x === "object")
+    {
+      this.w = x.w;
+      this.h = x.h;
+    }
+    else 
+    {
+      this.w = w;
+      this.h = h;
+    }
   }
 
-  draw(ctx, color = "black") {
-    ctx.rect(this.x, this.y, this.w, this.h);
-    ctx.strokeStyle = color;
-    ctx.stroke();
+  draw(ctx, strokecolor = "black", fillcolor = "rgba(0,0,0,0.1)") {
+    ctx.beginPath();
+      ctx.rect(this.x, this.y, this.w, this.h);
+      ctx.strokeStyle = strokecolor;
+      ctx.stroke();
+      ctx.fillStyle = fillcolor;
+      ctx.fill();
+    ctx.closePath();
   }
 }
 
