@@ -1,12 +1,13 @@
 import { Line } from "line";
 import { Circle } from "circle";
 import { Vector } from "vector";
-import { isPointInCircle } from "collision";
+import { isPointInCircle, LineIntersection, SegmentIntersection } from "collision";
 
 let c, ctx, timer;
 let selected = null;
 let creating = null;
 const lines = [];
+let method = "segment";
 
 window.onload = () => {
   c = document.querySelector('canvas');
@@ -18,6 +19,8 @@ window.onload = () => {
   window.addEventListener("mousemove", handlemousemove);
   window.addEventListener("mousedown", handlemousedown);
   window.addEventListener("mouseup", handlemouseup);
+
+  document.querySelector('select').addEventListener('change', handleselectchange);
 }
 
 function draw() {
@@ -34,23 +37,31 @@ function draw() {
       line.draw(ctx);
     }
 
-    // for (let j=0; j<rectangles.length; j++) 
-    // {
-    //   if (i === j) continue;
-    //   const key = `${i}x${j}`
-    //   if (checked[key]) continue;
+    for (let j=0; j<lines.length; j++) 
+    {
+      if (i === j) continue;
+      const key = `${i}x${j}`
+      if (checked[key]) continue;
 
-    //   // mark this and its opposite
-    //   checked[key] = true;
-    //   checked[`${j}x${i}`] = true;
+      // mark this and its opposite
+      checked[key] = true;
+      checked[`${j}x${i}`] = true;
       
-    //   const intersectionrec = AABB(rec, rectangles[j]);
-    //   if (intersectionrec)
-    //   {
-    //     const r = new Rectangle(intersectionrec);
-    //     r.draw(ctx, "red", "rgba(255, 0, 0, 0.5)");
-    //   }
-    // }
+      let intersect;
+      if (method === "segment")
+      {
+        intersect = SegmentIntersection(line.a, line.b, lines[j].a, lines[j].b);
+      }
+      else // line
+      {
+        intersect = LineIntersection(line.a, line.b, lines[j].a, lines[j].b); 
+      }
+      if (intersect)
+      {
+        const c = Circle.toCircle(intersect, 15);
+        c.draw(ctx, "red");
+      }
+    }
     
   }
 
@@ -63,6 +74,16 @@ function draw() {
 }
 
 // event handlers
+function handleselectchange(e) {
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  
+  const {value} = e.target;
+  method = value;
+  draw();
+  window.cancelAnimationFrame(timer);
+}
 function handlemousemove(e) {
   if (selected)
   {

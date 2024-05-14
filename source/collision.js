@@ -101,6 +101,49 @@ export function isPointInCircle(p, a) {
   return dr <= a.r;
 }
 
-function LineLineIntersection(a, b) {
+/**
+ * 
+ * @param {Vector} p1 
+ * @param {Vector} p2 
+ * @param {Vector} p3 
+ * @param {Vector} p4 
+ * @returns false|Vector
+ */
+export function LineIntersection(p1, p2, p3, p4) {
+  const D1 = new Vector(p2.x - p1.x, p2.y - p1.y);
+  const D2 = new Vector(p4.x - p3.x, p4.y - p3.y);
+
+  const denominator = Vector.Cross(D1, D2);
+  if (denominator === 0) return false;
+
+  const p3p1 = new Vector(p3.x - p1.x, p3.y - p1.y);
+  const t = Vector.Cross(p3p1, D2) / denominator;
+  const u = Vector.Cross(p3p1, D1) / denominator;
+
+  return {
+    x: p1.x + t * D1.x,
+    y: p1.y + t * D1.y,
+    t,
+    u,
+  };
+}
+/**
+ * 
+ * @param {Vector} p1 
+ * @param {Vector} p2 
+ * @param {Vector} p3 
+ * @param {Vector} p4 
+ * @returns false|Vector
+ */
+export function SegmentIntersection(p1, p2, p3, p4) {
+
+  const i = LineIntersection(p1, p2, p3, p4);
+  if (i === false) return false;
   
+  if (i.t >= 0 && i.t <= 1 && i.u >= 0 && i.u <= 1)
+  {
+    return i;
+  }
+
+  return false;
 }
