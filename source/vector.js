@@ -151,6 +151,9 @@ export class Vector {
     this.z /= mag;
   }
 
+  dot(b) {
+    return this.x * b.x + this.y * b.y + this.z * b.z;
+  }
 
   draw(ctx, color = "black", r = 1) {
     ctx.beginPath();
@@ -190,6 +193,11 @@ export class Vector {
   }
   static Distance(a, b) {
     return Vector.Subtract(a, b).magnitude;
+  }
+  static Perpendicular(a, b, windingorder="clickwise") {
+    const v = Vector.Subtract(b, a);
+    if (windingorder === "clockwise") return new Vector(-v.y, v.x);
+    return new Vector(v.y, -v.x);
   }
 
   // basic functions

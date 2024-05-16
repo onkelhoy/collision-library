@@ -1,6 +1,6 @@
 import { Vector } from "vector";
 import { InputEvents } from "input-events";
-import { isPointInPolygonTriangles } from "collision";
+import { isPointInPolygonTriangles, SAT } from "collision";
 import { Polygon } from "polygon";
 
 let c, ctx, timer;
@@ -29,34 +29,45 @@ window.onload = () => {
 function draw() {
   ctx.clearRect(0, 0, c.width, c.height);
   const checked = {};
+  const collisions = {};
   for (let i=0; i<polygons.length; i++) {
     const polygon = polygons[i];
+
+    for (let j=0; j<polygons.length; j++) 
+    {
+      if (i === j) continue;
+      const key = `${i}x${j}`
+      if (checked[key]) continue;
+
+      // mark this and its opposite
+      checked[key] = true;
+      checked[`${j}x${i}`] = true;
+      
+      if (SAT(polygon, polygons[j]))
+      {
+        collisions[i] = true;
+        collisions[j] = true;
+      }
+      // const intersectionrec = AABB(rec, polygons[j]);
+      // if (intersectionrec)
+      // {
+      //   const r = new Rectangle(intersectionrec);
+      //   r.draw(ctx, "red", "rgba(0, 255, 0, 0.5)");
+      // }
+    }
+
     if (selected && selected.polygon === polygon)
     {
       polygon.draw(ctx, "blue", "rgba(0, 0, 255, 0.1)");
+    }
+    else if (collisions[i])
+    {
+      polygon.draw(ctx, "green", "rgba(0, 255, 0, 0.1)");
     }
     else 
     {
       polygon.draw(ctx);
     }
-
-    // for (let j=0; j<polygons.length; j++) 
-    // {
-    //   if (i === j) continue;
-    //   const key = `${i}x${j}`
-    //   if (checked[key]) continue;
-
-    //   // mark this and its opposite
-    //   checked[key] = true;
-    //   checked[`${j}x${i}`] = true;
-      
-    //   const intersectionrec = AABB(rec, polygons[j]);
-    //   if (intersectionrec)
-    //   {
-    //     const r = new Rectangle(intersectionrec);
-    //     r.draw(ctx, "red", "rgba(0, 255, 0, 0.5)");
-    //   }
-    // }
   }
 
   if (creating)

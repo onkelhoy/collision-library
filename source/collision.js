@@ -1,6 +1,4 @@
 import { Vector } from "vector";
-import {Polygon} from "./polygon";
-
 /**
  * 
  * @param {vector} p 
@@ -156,15 +154,27 @@ export function SegmentIntersection(p1, p2, p3, p4) {
 }
 
 export function isPointInPolygonTriangles(point, polygon) {
-  const triangles = polygon.getTriangles();
-
-  for (const triangle of triangles) 
+  for (let i=0; i<polygon.triangles.length; i+=3)
   {
-    if (isPointInTriangle(point, ...triangle))
+    const a = polygon.verticies[polygon.triangles[i]];
+    const b = polygon.verticies[polygon.triangles[i+1]];
+    const c = polygon.verticies[polygon.triangles[i+2]];
+
+    if (isPointInTriangle(point, a, b, c))
     {
-      return [true, triangle];
+      return [true, [a,b,c]];
     }
   }
+  
+  // const triangles = polygon.getTriangles();
+
+  // for (const triangle of triangles) 
+  // {
+  //   if (isPointInTriangle(point, ...triangle))
+  //   {
+  //     return [true, triangle];
+  //   }
+  // }
 
   return false;
 }
@@ -194,5 +204,61 @@ export function isPointInPolygonRayCasting(point, polygon) {
 export function SAT(a, b) {
   if (!AABB(a.boundary, b.boundary)) return false;
 
+  for (let i=0; i<a.verticies.length; i++) 
+  {
+    const axis = Vector.Perpendicular(a.verticies[i], a.verticies[(i+1) % a.verticies.length]);
+    
+    const [mina, maxa] = sat_projectvertices(a.verticies, axis);
+    const [minb, maxb] = sat_projectvertices(b.verticies, axis);
+
+    if (mina >= maxb || minb >= maxa) return false;
+  }
+
+  for (let i=0; i<b.verticies.length; i++) 
+    {
+      const axis = Vector.Perpendicular(b.verticies[i], b.verticies[(i+1) % b.verticies.length]);
+      
+      const [mina, maxa] = sat_projectvertices(a.verticies, axis);
+      const [minb, maxb] = sat_projectvertices(b.verticies, axis);
   
+      if (mina >= maxb || minb >= maxa) return false;
+    }
+
+  return true;
+}
+
+function sat_helper(a, b, cache) {
+  for (let i=0; i<a.triangles.length; i+=3)
+  {
+    const va = a.verticies[a.triangles[i]];
+    const vb = a.verticies[a.triangles[i+1]];
+    const vc = a.verticies[a.triangles[i+2]];
+
+    const axis1 = Vector.Perpendicular(va, vb);
+    const axis2 = Vector.Perpendicular(vb, vc);
+    const axis3 = Vector.Perpendicular(vc, va);
+
+
+    // const [amin, amax]
+  }
+}
+function sat_checkline(a, b, vai, vbi, cache) {
+  const key = `${a.id}${vai}x${vbi}`
+  if (cache[key]) return;
+  cache[key] = true;
+
+  const axis = Vector.Perpendicular(a, b);
+
+}
+function sat_projectvertices(verticies, axis) {
+  let min = Number.MAX_SAFE_INTEGER;
+  let max = Number.MIN_SAFE_INTEGER;
+  for (const v of verticies) 
+  {
+    const projection = v.dot(axis);
+    if (projection < min) min = projection;
+    if (projection > max) max = projection;
+  }
+
+  return [min, max];
 }
