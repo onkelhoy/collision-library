@@ -1,4 +1,5 @@
 import { Vector } from "vector";
+import {Polygon} from "./polygon";
 
 /**
  * 
@@ -183,4 +184,15 @@ export function isPointInPolygonRayCasting(point, polygon) {
   }
 
   return intersections % 2 === 1;
+}
+
+/**
+ * 
+ * @param {Polygon} a 
+ * @param {Polygon} b 
+ */
+export function SAT(a, b) {
+  if (!AABB(a.boundary, b.boundary)) return false;
+
+  
 }

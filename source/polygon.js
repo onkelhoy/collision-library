@@ -1,5 +1,4 @@
 import {Vector} from "vector";
-import {Rectangle} from "rectangle";
 import {Triangulate} from "polygon-helper";
 
 export class Polygon {
@@ -7,7 +6,7 @@ export class Polygon {
   constructor(...verticies) {
     this.verticies = [];
     this.triangles = [];
-    this.boundary = new Rectangle(0,0,0,0);
+    this.boundaryindex = null;
 
     for (let v of verticies) {
       this.verticies.push(new Vector(v));
@@ -17,6 +16,17 @@ export class Polygon {
     {
       this.triangulate();
       this.setBoundary();
+    }
+  }
+
+  get boundary() {
+    if (!this.boundaryindex) return null;
+
+    return {
+      x: this.verticies[this.boundaryindex[0]].x,
+      y: this.verticies[this.boundaryindex[1]].y,
+      w: this.verticies[this.boundaryindex[2]].x - this.verticies[this.boundaryindex[0]].x, 
+      h: this.verticies[this.boundaryindex[3]].y - this.verticies[this.boundaryindex[1]].y, 
     }
   }
 
@@ -44,26 +54,45 @@ export class Polygon {
   }
 
   triangulate() {
+    this.setBoundary();
     return Triangulate(this);
   }
 
   setBoundary() {
-    let minx = Number.MIN_SAFE_INTEGER;
-    let miny = Number.MIN_SAFE_INTEGER;
-    let maxx = Number.MAX_SAFE_INTEGER;
-    let maxy = Number.MAX_SAFE_INTEGER;
+    let minx = Number.MAX_SAFE_INTEGER;
+    let miny = Number.MAX_SAFE_INTEGER;
+    let maxx = Number.MIN_SAFE_INTEGER;
+    let maxy = Number.MIN_SAFE_INTEGER;
 
-    this.verticies.forEach(v => {
-      if (v.x < minx) minx = v.x;
-      else if (v.x > maxx) maxx = v.x;
-      if (v.y < miny) miny = v.y;
-      else if (v.y > maxy) maxy = v.y;
+    let minxindex = -1;
+    let minyindex = -1;
+    let maxxindex = -1;
+    let maxyindex = -1;
+
+    this.verticies.forEach((v, index) => {
+      if (v.x < minx) 
+      {
+        minx = v.x;
+        minxindex = index;
+      }
+      if (v.x > maxx) 
+      {
+        maxx = v.x;
+        maxxindex = index;
+      }
+      if (v.y < miny) 
+      {
+        miny = v.y;
+        minyindex = index;
+      }
+      if (v.y > maxy) 
+      {
+        maxy = v.y;
+        maxyindex = index;
+      }
     });
 
-    this.boundary.x = minx;
-    this.boundary.y = miny;
-    this.boundary.w = maxx - minx;
-    this.boundary.h = maxy - miny;
+    this.boundaryindex = [minxindex, minyindex, maxxindex, maxyindex];
   }
 
   getTriangle(i) {
@@ -130,9 +159,16 @@ export class Polygon {
       ctx.fill();
       ctx.closePath();
 
-      ctx.strokeWidth = r / 2;
-      ctx.setLineDash([10, 15]);
-      this.boundary.draw(ctx, strokecolor, undefined);
+      const boundary = this.boundary;
+      if (boundary)
+      {
+        ctx.beginPath();
+          ctx.strokeWidth = r / 2;
+          ctx.setLineDash([10, 15]);
+          ctx.rect(boundary.x, boundary.y, boundary.w, boundary.h);
+          ctx.stroke();
+        ctx.closePath();
+      }
     }
   }
 }
