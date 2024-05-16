@@ -19,9 +19,7 @@ function pointintriangle_helper(p, triangle, index) {
   const ab = Vector.Subtract(triangle[(index + 1) % triangle.length], triangle[index]); // b - a 
   const ap = Vector.Subtract(p, triangle[index]); // p - a 
 
-  if (Vector.Cross(ab, ap) > 0) return false;
-
-  return true;
+  return Vector.Cross(ab, ap) <= 0;
 }
 
 /**
@@ -70,17 +68,29 @@ export function isPointInRectangle(p, rec) {
  * @param {Circle} b 
  * @returns boolean|Circle
  */
-export function CircleCircle(a, b) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const dr = Math.sqrt(dx*dx + dy*dy);
+export function CircleIntersection(a, b) {
+  const dv = Vector.Subtract(b, a);
+  const d = dv.magnitude;
 
-  if (dr <= a.r + b.r) 
+  if (d <= a.r + b.r) 
   {
+    const r = (a.r + b.r - d) / 2;
+    const arp = a.r ** 2;
+
+    const aa = (arp - b.r ** 2 + d ** 2) / (2 * d);
+    const h = Math.sqrt(arp - aa ** 2);
+
+    const vc =  a.Add({x: aa * dv.x / d, y: aa * dv.y / d});
+    const va = vc.Add({x:  h * dv.y / d, y: -h * dv.x / d});
+    const vb = vc.Add({x: -h * dv.y / d, y:  h * dv.x / d});
+
     return {
-      x: dx,
-      y: dy,
-      r: dr,
+      va: va,
+      vb: vb,
+      vc: vc,
+      r,
+      a: aa,
+      h,
     }
   }
 
@@ -94,11 +104,7 @@ export function CircleCircle(a, b) {
  * @returns boolean
  */
 export function isPointInCircle(p, a) {
-  const dx = p.x - a.x;
-  const dy = p.y - a.y;
-  const dr = Math.sqrt(dx*dx + dy*dy);
-
-  return dr <= a.r;
+  return Vector.Distance(p, a) <= a.r;
 }
 
 /**
@@ -110,15 +116,15 @@ export function isPointInCircle(p, a) {
  * @returns false|Vector
  */
 export function LineIntersection(p1, p2, p3, p4) {
-  const D1 = new Vector(p2.x - p1.x, p2.y - p1.y);
-  const D2 = new Vector(p4.x - p3.x, p4.y - p3.y);
-
+  const D1 = Vector.Subtract(p2, p1);
+  const D2 = Vector.Subtract(p4, p3);
+  
   const denominator = Vector.Cross(D1, D2);
   if (denominator === 0) return false;
-
-  const p3p1 = new Vector(p3.x - p1.x, p3.y - p1.y);
-  const t = Vector.Cross(p3p1, D2) / denominator;
-  const u = Vector.Cross(p3p1, D1) / denominator;
+  
+  const D3 = Vector.Subtract(p3, p1);
+  const t = Vector.Cross(D3, D2) / denominator;
+  const u = Vector.Cross(D3, D1) / denominator;
 
   return {
     x: p1.x + t * D1.x,
@@ -146,4 +152,35 @@ export function SegmentIntersection(p1, p2, p3, p4) {
   }
 
   return false;
+}
+
+export function isPointInPolygonTriangles(point, polygon) {
+  const triangles = polygon.getTriangles();
+
+  for (const triangle of triangles) 
+  {
+    if (isPointInTriangle(point, ...triangle))
+    {
+      return [true, triangle];
+    }
+  }
+
+  return false;
+}
+
+export function isPointInPolygonRayCasting(point, polygon) {
+  const ray = [point, point.Add(10000, 0)];
+  let intersections = 0;
+  for (let i=0; i<polygon.verticies.length; i++) 
+  {
+    const a = polygon.verticies[i];
+    const b = polygon.verticies[(i + 1) % polygon.verticies.length];
+
+    if (SegmentIntersection(ray[0], ray[1], a, b))
+    {
+      intersections++;
+    }
+  }
+
+  return intersections % 2 === 1;
 }

@@ -14,66 +14,189 @@ export class Vector {
     }
   }
 
-  subtractFrom(b) {
-    const v = Vector.toVector(b);
-
-    this.x -= v.x;
-    this.y -= v.y;
-    this.z -= v.z;
+  get magnitude() {
+    return Vector.Magnitude(this);
   }
-  addFrom(b) {
-    const v = Vector.toVector(b);
-
-    this.x += v.x;
-    this.y += v.y;
-    this.z += v.z;
-  }
-  multiplyFrom(b) {
-    const v = Vector.toVector(b);
-
-    this.x *= v.x;
-    this.y *= v.y;
-    this.z *= v.z;
+  get angle() {
+    return Math.atan2(this.y, this.x);
   }
 
-
-  subtract(b) {
-    const v = Vector.Copy(this);
-
-    v.x -= b.x;
-    v.y -= b.y;
-    v.z -= b.z;
-
-    return v;
+  set magnitude(value) {
+    const angle = this.angle;
+    this.x = Math.cos(angle) * value;
+    this.y = Math.sin(angle) * value;
   }
-  add(b) {
-    const v = Vector.Copy(this);
-
-    v.x += b.x;
-    v.y += b.y;
-    v.z += b.z;
-
-    return v;
+  set angle(value) {
+    const mag = this.magnitude;
+    this.x = Math.cos(value) * mag;
+    this.y = Math.sin(value) * mag;
   }
-  multiply(b) {
-    const v = Vector.Copy(this);
 
-    v.x *= b.x;
-    v.y *= b.y;
-    v.z *= b.z;
+  // affectors
+  /**
+   * Sets vector to value
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns Vector
+   */
+  set(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    this.x = vv.x;
+    this.y = vv.y;
+    this.z = vv.z;
 
-    return v;
+    return this;
   }
+  /**
+   * Adds another vector to original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns Vector
+   */
+  add(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    this.x += vv.x;
+    this.y += vv.y;
+    this.z += vv.z;
+
+    return this;
+  }
+  /**
+   * Subtracts another vector to original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns Vector
+   */
+  sub(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    this.x -= vv.x;
+    this.y -= vv.y;
+    this.z -= vv.z;
+
+    return this;
+  }
+  /**
+   * Multiplies another vector to original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns Vector
+   */
+  mul(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    this.x *= vv.x;
+    this.y *= vv.y;
+    this.z *= vv.z;
+
+    return this;
+  }
+
+  // copy
+  /**
+   * Adds 2 vectors without modifying the original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns new Vector
+   */
+  Add(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    const copy = Vector.Copy(this);
+    copy.x += vv.x;
+    copy.y += vv.y;
+    copy.z += vv.z;
+
+    return copy;
+  }
+    /**
+   * Subtracts 2 vectors without modifying the original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns new Vector
+   */
+  Sub(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    const copy = Vector.Copy(this);
+    copy.x -= vv.x;
+    copy.y -= vv.y;
+    copy.z -= vv.z;
+
+    return copy;
+  }
+    /**
+   * Multiplies 2 vectors without modifying the original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns new Vector
+   */
+  Mul(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    const copy = Vector.Copy(this);
+    copy.x *= vv.x;
+    copy.y *= vv.y;
+    copy.z *= vv.z;
+
+    return copy;
+  }
+
+  normalise() {
+    const mag = this.magnitude;
+    this.x /= mag;
+    this.y /= mag;
+    this.z /= mag;
+  }
+
 
   draw(ctx, color = "black", r = 1) {
-    return Vector.Draw(this, ctx, color, r);
+    ctx.beginPath();
+      ctx.arc(this.x, this.y, r/2, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    ctx.closePath();
+  }
+
+  copy() {
+    return new Vector(this.x, this.y, this.z);
   }
   
-  // helper function 
-  static toVector(v) {
+  // static function 
+  // mathematical
+  static Multiply(a, b) {
+    return new Vector(a).mul(b);
+  }
+  static Add(a, b) {
+    return new Vector(a).add(b);
+  }
+  static Subtract(a, b) {
+    return new Vector(a).sub(b);
+  }
+  static CrossProduct(a, b) {
+    return new Vector(
+      a.y * b.z - a.z * b.y,
+      a.z * b.x - a.x * b.z,
+      a.y * b.x - a.x * b.y,
+    )
+  }
+  static Cross(a, b) {
+    return a.y * b.x - a.x * b.y;
+  }
+  static Magnitude(v) {
+    return Math.sqrt(v.x*v.x + v.y*v.y);
+  }
+  static Distance(a, b) {
+    return Vector.Subtract(a, b).magnitude;
+  }
+
+  // basic functions
+  static toVector(v, y, z = 0) {
     if (typeof v === "number") 
     {
-      return new Vector(v, v);
+      return new Vector(v, y ?? v, z ?? v);
     }
 
     if (v instanceof Vector) 
@@ -87,40 +210,12 @@ export class Vector {
 
     throw new Error(`This ${v} could not be reshaped into a vector`);
   }
-
-  static Multiply(a, b) {
-    return Vector.Copy(Vector.toVector(a)).multiplyFrom(b);
-  }
-  static Add(a, b) {
-    return Vector.Copy(Vector.toVector(a)).addFrom(b);
-  }
-  static Subtract(a, b) {
-    const v = Vector.Copy(Vector.toVector(a));
-    v.subtractFrom(b);
-    return v;
-  }
-
   static Copy(v) {
     return new Vector(v);
   }
 
-  static CrossProduct(a, b) {
-    return new Vector(
-      a.y * b.z - a.z * b.y,
-      a.z * b.x - a.x * b.z,
-      a.y * b.x - a.x * b.y,
-    )
-  }
-  static Cross(a, b) {
-    return a.y * b.x - a.x * b.y;
-  }
-
   static Draw(v, ctx, color = "black", r = 1) {
-    v = Vector.toVector(v);
-    ctx.beginPath();
-      ctx.arc(v.x, v.y, r/2, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-    ctx.closePath();
+    const vv = Vector.toVector(v);
+    vv.draw(ctx, color, r);
   }
 }

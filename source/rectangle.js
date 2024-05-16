@@ -20,8 +20,11 @@ export class Rectangle extends Vector {
       ctx.rect(this.x, this.y, this.w, this.h);
       ctx.strokeStyle = strokecolor;
       ctx.stroke();
-      ctx.fillStyle = fillcolor;
-      ctx.fill();
+      if (fillcolor) 
+      {
+        ctx.fillStyle = fillcolor;
+        ctx.fill();
+      }
     ctx.closePath();
   }
 }

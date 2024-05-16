@@ -47,7 +47,7 @@ function draw() {
       if (intersectionrec)
       {
         const r = new Rectangle(intersectionrec);
-        r.draw(ctx, "red", "rgba(255, 0, 0, 0.5)");
+        r.draw(ctx, "red", "rgba(0, 255, 0, 0.5)");
       }
     }
   }
@@ -90,6 +90,7 @@ function handlemousedown(e) {
         rectangle: rec,
         offset: new Vector(e.clientX - rec.x, e.clientY - rec.y),
       }
+      break;
     }
   }
 
