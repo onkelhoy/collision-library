@@ -79,6 +79,21 @@ export class Vector {
     return this;
   }
   /**
+   * Divides another vector to original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns Vector
+   */
+  divide(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    this.x /= vv.x;
+    this.y /= vv.y;
+    this.z /= vv.z;
+
+    return this;
+  }
+  /**
    * Multiplies another vector to original
    * @param {Vector|number} v 
    * @param {undefined|number} y 
@@ -127,7 +142,23 @@ export class Vector {
 
     return copy;
   }
-    /**
+  /**
+   * Divides 2 vectors without modifying the original
+   * @param {Vector|number} v 
+   * @param {undefined|number} y 
+   * @param {undefined|number} z 
+   * @returns new Vector
+   */
+  Divide(v, y, z = 0) {
+    const vv = Vector.toVector(v, y, z);
+    const copy = Vector.Copy(this);
+    copy.x /= vv.x;
+    copy.y /= vv.y;
+    copy.z /= vv.z;
+
+    return copy;
+  }
+  /**
    * Multiplies 2 vectors without modifying the original
    * @param {Vector|number} v 
    * @param {undefined|number} y 
@@ -149,6 +180,8 @@ export class Vector {
     this.x /= mag;
     this.y /= mag;
     this.z /= mag;
+
+    return this;
   }
 
   dot(b) {
@@ -172,6 +205,9 @@ export class Vector {
   static Multiply(a, b) {
     return new Vector(a).mul(b);
   }
+  static Multiply(a, b) {
+    return new Vector(a).divide(b);
+  }
   static Add(a, b) {
     return new Vector(a).add(b);
   }
@@ -182,11 +218,11 @@ export class Vector {
     return new Vector(
       a.y * b.z - a.z * b.y,
       a.z * b.x - a.x * b.z,
-      a.y * b.x - a.x * b.y,
+      a.x * b.y - a.y * b.x,
     )
   }
   static Cross(a, b) {
-    return a.y * b.x - a.x * b.y;
+    return a.x * b.y - a.y * b.x;
   }
   static Magnitude(v) {
     return Math.sqrt(v.x*v.x + v.y*v.y);
@@ -198,6 +234,14 @@ export class Vector {
     const v = Vector.Subtract(b, a);
     if (windingorder === "clockwise") return new Vector(-v.y, v.x);
     return new Vector(v.y, -v.x);
+  }
+  static Normalise(v) {
+    const copy = new Vector(v);
+    copy.normalise();
+    return copy;
+  }
+  static Dot(a, b) {
+    return Vector.toVector(a).dot(b);
   }
 
   // basic functions
@@ -220,6 +264,9 @@ export class Vector {
   }
   static Copy(v) {
     return new Vector(v);
+  }
+  static get Zero() {
+    return new Vector(0, 0, 0);
   }
 
   static Draw(v, ctx, color = "black", r = 1) {

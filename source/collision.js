@@ -18,7 +18,7 @@ function pointintriangle_helper(p, triangle, index) {
   const ab = Vector.Subtract(triangle[(index + 1) % triangle.length], triangle[index]); // b - a 
   const ap = Vector.Subtract(p, triangle[index]); // p - a 
 
-  return Vector.Cross(ab, ap) <= 0;
+  return Vector.Cross(ab, ap) >= 0;
 }
 
 /**
@@ -197,64 +197,166 @@ export function isPointInPolygonRayCasting(point, polygon) {
 }
 
 /**
- * 
+ * Seperate Axis Theorem : SAT 
  * @param {Polygon} a 
  * @param {Polygon} b 
  */
 export function SAT(a, b) {
   if (!AABB(a.boundary, b.boundary)) return false;
 
+  const ainfo = sat_helper(a, b);
+  if (!ainfo) return false;
+
+  const binfo = sat_helper(b, a);
+  if (!binfo) return false;
+
+  let target = binfo;
+  if (ainfo.depth < binfo.depth)
+  {
+    target = ainfo;
+  }
+
+  const normalmag = target.axis.magnitude;
+  const normal = target.axis.normalise();
+  const direction = a.center.sub(b.center);
+
+  if (direction.dot(normal) > 0)
+  {
+    normal.mul(-1); // flip
+  }
+
+  return {
+    depth: target.depth / normalmag,
+    normal,
+  }
+}
+function sat_helper(a, b) {
+  let depth = Number.MAX_SAFE_INTEGER;
+  let axis = Vector.Zero;
+
   for (let i=0; i<a.verticies.length; i++) 
   {
-    const axis = Vector.Perpendicular(a.verticies[i], a.verticies[(i+1) % a.verticies.length]);
+    const localaxis = Vector.Perpendicular(a.verticies[i], a.verticies[(i+1) % a.verticies.length]);
     
-    const [mina, maxa] = sat_projectvertices(a.verticies, axis);
-    const [minb, maxb] = sat_projectvertices(b.verticies, axis);
+    const [mina, maxa] = sat_projectvertices(a.verticies, localaxis);
+    const [minb, maxb] = sat_projectvertices(b.verticies, localaxis);
 
     if (mina >= maxb || minb >= maxa) return false;
-  }
 
-  for (let i=0; i<b.verticies.length; i++) 
+    const localdepth = Math.min(maxb - mina, maxa - minb);
+    if (localdepth < depth)
     {
-      const axis = Vector.Perpendicular(b.verticies[i], b.verticies[(i+1) % b.verticies.length]);
-      
-      const [mina, maxa] = sat_projectvertices(a.verticies, axis);
-      const [minb, maxb] = sat_projectvertices(b.verticies, axis);
-  
-      if (mina >= maxb || minb >= maxa) return false;
+      depth = localdepth;
+      axis = localaxis;
     }
-
-  return true;
-}
-
-function sat_helper(a, b, cache) {
-  for (let i=0; i<a.triangles.length; i+=3)
-  {
-    const va = a.verticies[a.triangles[i]];
-    const vb = a.verticies[a.triangles[i+1]];
-    const vc = a.verticies[a.triangles[i+2]];
-
-    const axis1 = Vector.Perpendicular(va, vb);
-    const axis2 = Vector.Perpendicular(vb, vc);
-    const axis3 = Vector.Perpendicular(vc, va);
-
-
-    // const [amin, amax]
   }
-}
-function sat_checkline(a, b, vai, vbi, cache) {
-  const key = `${a.id}${vai}x${vbi}`
-  if (cache[key]) return;
-  cache[key] = true;
 
-  const axis = Vector.Perpendicular(a, b);
-
+  return {axis, depth};
 }
 function sat_projectvertices(verticies, axis) {
   let min = Number.MAX_SAFE_INTEGER;
   let max = Number.MIN_SAFE_INTEGER;
   for (const v of verticies) 
   {
+    const projection = v.dot(axis);
+    if (projection < min) min = projection;
+    if (projection > max) max = projection;
+  }
+
+  return [min, max];
+}
+
+/**
+ * (T) triangle SAT : TSAT 
+ * @param {Polygon} a 
+ * @param {Polygon} b 
+ * @returns 
+ */
+export function TSAT(a, b) {
+  if (!AABB(a.boundary, b.boundary)) return false;
+
+  if (sat_trianglehelper(a, b)) return false;
+  
+  return !sat_trianglehelper(b, a);
+}
+
+function sat_trianglehelper(a, b) 
+{
+  let gaps = 0;
+  for (let i=0; i<a.triangles.length; i+=3)
+  {
+    const axises = sat_axises(i, a);
+
+    for (const axis of axises) 
+    {
+      const [mina, maxa] = sat_projecttriangle(a, i, axis);
+      const [minb, maxb] = sat_projecttriangles(b, axis);
+
+      if (mina >= maxb || minb >= maxa) 
+      {
+        gaps++;
+        break; // this ensures we only have 1 gap per triangle 
+      }
+    }
+  }
+
+  console.log(gaps, a.triangles.length)
+  return gaps === a.triangles.length;
+}
+
+function sat_axises(i, p, cache) {
+  const iva = p.triangles[i];
+  const ivb = p.triangles[i + 1];
+  const ivc = p.triangles[i + 2];
+
+  const axises = [];
+  sat_axis(iva, ivb, p, axises, cache); // a -> b
+  sat_axis(ivb, ivc, p, axises, cache); // b -> c
+  sat_axis(ivc, iva, p, axises, cache); // c -> a
+
+  return axises;
+
+  // without attempt of optimize
+  // return [
+  //   Vector.Perpendicular(p.verticies[iva], p.verticies[ivb]),
+  //   Vector.Perpendicular(p.verticies[ivb], p.verticies[ivc]),
+  //   Vector.Perpendicular(p.verticies[ivc], p.verticies[iva]),
+  // ]
+}
+function sat_axis(a, b, p, axises, cache) {
+  // if (!cache[`${a}-${b}`] && ((a + 1) % p.verticies.length) === b) 
+  if (((a + 1) % p.verticies.length) === b) 
+  {
+    // good candidate a -> b
+    const axis = Vector.Perpendicular(p.verticies[a], p.verticies[b]);
+    axises.push(axis);
+    // cache[`${a}-${b}`] = {
+    //   axis,
+    // }
+  }
+}
+function sat_projecttriangles(p, axis) {
+  let min = Number.MAX_SAFE_INTEGER;
+  let max = Number.MIN_SAFE_INTEGER;
+  for (let i=0; i<p.triangles.length; i+=3)
+  {
+    for (let j=0; j<3; j++)
+    {
+      const v = p.verticies[p.triangles[i + j]];
+      const projection = v.dot(axis);
+      if (projection < min) min = projection;
+      if (projection > max) max = projection;
+    }
+  }
+  
+  return [min, max];
+}
+function sat_projecttriangle(p, triangleindex, axis) {
+  let min = Number.MAX_SAFE_INTEGER;
+  let max = Number.MIN_SAFE_INTEGER;
+  for (let i=0; i<3; i++)
+  {
+    const v = p.verticies[p.triangles[triangleindex + i]];
     const projection = v.dot(axis);
     if (projection < min) min = projection;
     if (projection > max) max = projection;

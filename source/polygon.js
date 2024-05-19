@@ -1,12 +1,15 @@
 import {Vector} from "vector";
-import {Triangulate} from "polygon-helper";
+import {Triangulate} from "triangulate";
 
 export class Polygon {
+
+  static instances = 0;
 
   constructor(...verticies) {
     this.verticies = [];
     this.triangles = [];
     this.boundaryindex = null;
+    this.id = Polygon.instances++;
 
     for (let v of verticies) {
       this.verticies.push(new Vector(v));
@@ -14,8 +17,7 @@ export class Polygon {
 
     if (this.verticies.length > 0)
     {
-      this.triangulate();
-      this.setBoundary();
+      this.recalculate();
     }
   }
 
@@ -45,54 +47,129 @@ export class Polygon {
     this.debouncedmove(this.x, value);
   }
 
+  get center() {
+    if (!this.centeroffset)
+    {
+      this.setBoundaryAndCenter();
+    }
+
+    return this.centeroffset.Add(this.verticies[0]);
+  }
+
   debouncedmove(x, y) {
 
   }
 
-  move(x, y) {
-
+  move(v, y) {
+    
   }
 
-  triangulate() {
-    this.setBoundary();
-    return Triangulate(this);
-  }
+  recalculate() {
+    // setting properties
+    this.centeroffset = Vector.Zero;
+    this.boundaryindex = [];
+    this.concave = false;
 
-  setBoundary() {
+    // no point for polygons less then or equal to 2 
+    if (this.verticies.length <= 2) return;
+    
+    // boundary calculation
     let minx = Number.MAX_SAFE_INTEGER;
     let miny = Number.MAX_SAFE_INTEGER;
     let maxx = Number.MIN_SAFE_INTEGER;
     let maxy = Number.MIN_SAFE_INTEGER;
-
     let minxindex = -1;
     let minyindex = -1;
     let maxxindex = -1;
     let maxyindex = -1;
 
-    this.verticies.forEach((v, index) => {
+    // keep track on number of convex and concave to determine if concave + counter clockwise direction
+    let convex = 0, concave = 0;
+    for (let i=0; i<this.verticies.length; i++)
+    {
+      const v = this.verticies[i];
+      const prev = (i - 1 + this.verticies.length) % this.verticies.length;
+      const next = (i + 1) % this.verticies.length;
+
+      // vector AB : previous to current 
+      const AB = Vector.Subtract(v, this.verticies[prev]);
+      // vector BC : current to next
+      const BC = Vector.Subtract(this.verticies[next], v);
+
+      const crossproduct = Vector.Cross(AB, BC);
+
+      if (crossproduct > 0)
+      {
+        convex++;
+      }
+      else if (crossproduct < 0)
+      {
+        concave++;
+      }
+      else 
+      {
+        // its collinear
+        this.verticies.splice(i, 1);
+
+        // Adjust the index after removing the vertex
+        i--;
+
+        // continue to next iteration 
+        continue;
+      }
+
+      // add each vertex
+      this.centeroffset.add(v);
+
+      // get min-max for boundary
       if (v.x < minx) 
       {
         minx = v.x;
-        minxindex = index;
+        minxindex = i;
       }
       if (v.x > maxx) 
       {
         maxx = v.x;
-        maxxindex = index;
+        maxxindex = i;
       }
       if (v.y < miny) 
       {
         miny = v.y;
-        minyindex = index;
+        minyindex = i;
       }
       if (v.y > maxy) 
       {
         maxy = v.y;
-        maxyindex = index;
+        maxyindex = i;
       }
-    });
-
+    }
+    
+    // set the boundary 
     this.boundaryindex = [minxindex, minyindex, maxxindex, maxyindex];
+
+    if (concave > convex)
+    {
+      // counter clockwise
+      this.verticies = this.verticies.reverse();
+      
+      // need to flip the boundary indexes
+      this.boundaryindex = this.boundaryindex.map(i => this.verticies.length - 1 - i);
+    }
+    this.concave = convex > 0 && concave > 0;
+
+
+    // set the center to median of verticies 
+    this.centeroffset.divide(this.verticies.length);
+    this.centeroffset.sub(this.verticies[0]);
+
+    console.log(this.id, 'is concave:', this.concave);
+
+    // call triangulation
+    this.triangulate();
+  }
+
+  triangulate() {
+    Triangulate(this);
   }
 
   getTriangle(i) {

@@ -1,6 +1,6 @@
 import { Vector } from "vector";
 import { InputEvents } from "input-events";
-import { isPointInPolygonTriangles, SAT } from "collision";
+import { isPointInPolygonTriangles, SAT, TSAT } from "collision";
 import { Polygon } from "polygon";
 
 let c, ctx, timer;
@@ -9,6 +9,7 @@ let selected = null;
 let creating = null;
 let events = null;
 const polygons = [];
+let method = "normal";
 
 window.onload = () => {
   c = document.querySelector('canvas');
@@ -24,6 +25,8 @@ window.onload = () => {
   events.mouse.on('move', handlemousemove);
   // keyboard events
   events.keyboard.on('enter-up', handleenter);
+
+  document.querySelector('select').addEventListener('change', handleselectchange);
 }
 
 function draw() {
@@ -43,10 +46,25 @@ function draw() {
       checked[key] = true;
       checked[`${j}x${i}`] = true;
       
-      if (SAT(polygon, polygons[j]))
+      if (method === "normal")
       {
-        collisions[i] = true;
-        collisions[j] = true;
+        const intersection = SAT(polygon, polygons[j])
+        if (intersection)
+        {
+          // console.log(intersection);
+          // polygon.move()
+          collisions[i] = true;
+          collisions[j] = true;
+        }
+      } 
+      else 
+      {
+        if (TSAT(polygon, polygons[j]))
+        {
+          // polygon.move()
+          collisions[i] = true;
+          collisions[j] = true;
+        }
       }
       // const intersectionrec = AABB(rec, polygons[j]);
       // if (intersectionrec)
@@ -79,6 +97,16 @@ function draw() {
 }
 
 // event handlers
+function handleselectchange(e) {
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  
+  const {value} = e.target;
+  method = value;
+  draw();
+  window.cancelAnimationFrame(timer);
+}
 function handlemousemove(e) {
   if (selected)
   {
@@ -122,11 +150,11 @@ function handlemousedown(e) {
 function handlemouseup(e) {
   if (creating)
   {
-    if (creating.verticies.length > 0 && Vector.Distance(e.target.position, creating.verticies[0]) <= 20)
+    if (creating.verticies.length > 1 && Vector.Distance(e.target.position, creating.verticies[0]) <= 20)
     {
       // loop it 
+      creating.recalculate();
       polygons.push(creating);
-      creating.triangulate();
       creating = null;
     }
     else 
@@ -134,7 +162,7 @@ function handlemouseup(e) {
       creating.verticies.push(e.target.position.copy());
     }
     // polygons.push(creating);
-    // creating.triangulate();
+    // creating.recalculate();
     // creating = null;
   }
   else if (selected) 
@@ -149,8 +177,8 @@ function handlemouseup(e) {
 function handleenter(e) {
   if (creating)
   {
+    creating.recalculate();
     polygons.push(creating);
-    creating.triangulate();
     creating = null;
     draw();
     setTimeout(() => {

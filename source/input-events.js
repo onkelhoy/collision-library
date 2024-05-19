@@ -201,39 +201,88 @@ class Keyboard extends EventTarget {
     }));
   }
 }
-export class InputEvents extends EventTarget {
-  constructor(canvas, settings) {
+class Touch extends EventTarget {
+  constructor(canvas) {
     super();
-    this.config = getSettings(settings);
-
-    this.mouse = new Mouse(canvas, this.config);
-    this.keyboard = new Keyboard();
-    this.setupTouch(canvas);
-  }
-
-  // setups
-  setupTouch(canvas) {
-    // register touch events
+    this.touches = [];
+    this.position = new Vector(0, 0); // first move 
+    this.movement = new Vector(0, 0);
+    
     canvas.addEventListener("touchstart", this.handletouchstart);
     canvas.addEventListener("touchend",this. handletouchend);
     canvas.addEventListener("touchmove", this.handletouchmove);
     canvas.addEventListener("touchcancel", this.handletouchcancel);
   }
 
-  handletouchstart = (e) => {
+  // public function
+  on(eventname, callback) {
+    this.addEventListener(eventname, callback);
+  }
 
+  // event handlers 
+  handletouchstart = (e) => {
+    this.touches = e.touches;
+    
+    console.log("start", e);
   }
   handletouchend = (e) => {
+    console.log("end",e);
+    this.touches = e.touches;
 
   }
   handletouchmove = (e) => {
+    this.touches = e.touches;
 
+    console.log("move",e);
   }
   handletouchcancel = (e) => {
+    this.touches = e.touches;
+
+    console.log("cancel", e);
 
   }
-  //#endregion
 }
+export class InputEvents extends EventTarget {
+  constructor(canvas, settings) {
+    super();
+    this.config = getSettings(settings);
+
+    this.mouse = new Mouse(canvas, this.config);
+    this.touch = new Touch(canvas);
+    this.keyboard = new Keyboard();
+
+    this.mouse.on("move", this.handlemove);
+    this.mouse.on("down", this.handledown);
+    this.mouse.on("up", this.handleup);
+    this.touch.on("first-move", this.handlemove);
+    this.touch.on("first-down", this.handledown);
+    this.touch.on("first-up", this.handleup);
+  }
+
+  key(name) {
+    return this.keyboard.keys[name];
+  }
+  onkey(eventname, callback) {
+    this.keyboard.on(eventname, callback);
+  }
+
+  // event handlers 
+  handlemove = (e) => {
+    this.dispatchEvent(new Event("move"))
+  }
+  handleup = (e) => {
+    this.dispatchEvent(new Event("click"))
+  }
+  handledown = (e) => {
+    this.dispatchEvent(new Event("click-pressed"))
+  }
+}
+
+// new CustomEvent("move", {
+//   detail: {
+//     type: e.target instanceof Mouse ? "mouse" : "touch"
+//   }
+// })
 
 // helper functions
 function getSettings(settings) {

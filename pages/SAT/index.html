@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SAT</title>
+  <title>Seperate Axis Theorem</title>
 
   <script type="importmap">
     {
@@ -12,7 +12,7 @@
         "vector": "../../source/vector.js",
         "polygon": "../../source/polygon.js",
         "rectangle": "../../source/rectangle.js",
-        "polygon-helper": "../../source/polygon-helper.js",
+        "triangulate": "../../source/triangulate.js",
         "collision": "../../source/collision.js",
         "input-events": "../../source/input-events.js"
       }
@@ -26,7 +26,7 @@
       background-size: 20px 20px;
     }
 
-    button {
+    select {
       position: fixed;
       bottom: 1rem;
       left: 50%;
@@ -39,5 +39,9 @@
 </head>
 <body>
   <canvas>Your browser does not support HTML canvas</canvas>
+  <select value="mode">
+    <option value="sat">Normal</option>
+    <option value="triangle">Triangle</option>
+  </select>
 </body>
 </html>
