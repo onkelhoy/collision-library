@@ -50,7 +50,7 @@ export class Polygon {
   get center() {
     if (!this.centeroffset)
     {
-      this.setBoundaryAndCenter();
+      return Vector.Zero;
     }
 
     return this.centeroffset.Add(this.verticies[0]);
@@ -157,12 +157,9 @@ export class Polygon {
     }
     this.concave = convex > 0 && concave > 0;
 
-
     // set the center to median of verticies 
     this.centeroffset.divide(this.verticies.length);
     this.centeroffset.sub(this.verticies[0]);
-
-    console.log(this.id, 'is concave:', this.concave);
 
     // call triangulation
     this.triangulate();
@@ -196,6 +193,9 @@ export class Polygon {
 
       ctx.fillText(i, v.x, v.y - 10);
     });
+
+    const c = this.center;
+    ctx.fillText(this.id, c.x, c.y);
     
     ctx.strokeWidth = r / 2;
     ctx.setLineDash([10, 15]);

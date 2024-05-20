@@ -1,6 +1,6 @@
 import { Vector } from "vector";
 import { InputEvents } from "input-events";
-import { isPointInPolygonTriangles, SAT, TSAT } from "collision";
+import { isPointInPolygonTriangles, SAT } from "collision";
 import { Polygon } from "polygon";
 
 let c, ctx, timer;
@@ -9,7 +9,7 @@ let selected = null;
 let creating = null;
 let events = null;
 const polygons = [];
-let method = "normal";
+let method = "sat";
 
 window.onload = () => {
   c = document.querySelector('canvas');
@@ -20,11 +20,16 @@ window.onload = () => {
 
   events = new InputEvents(c, { pointerlock: false });
   // mouse events
-  events.mouse.on('up', handlemouseup);
-  events.mouse.on('down', handlemousedown);
-  events.mouse.on('move', handlemousemove);
+  // events.mouse.on('up', handlemouseup);
+  // events.mouse.on('down', handlemousedown);
+  // events.mouse.on('move', handlemousemove);
+
+  events.on("mouse-up", handlemouseup);
+  events.on("mouse-down", handlemousedown);
+  events.on("mouse-move", handlemousemove);
+
   // keyboard events
-  events.keyboard.on('enter-up', handleenter);
+  events.on('enter-up', handleenter);
 
   document.querySelector('select').addEventListener('change', handleselectchange);
 }
@@ -46,26 +51,26 @@ function draw() {
       checked[key] = true;
       checked[`${j}x${i}`] = true;
       
-      if (method === "normal")
+      // if (method === "sat")
+      // {
+      const intersection = SAT(polygon, polygons[j])
+      if (intersection)
       {
-        const intersection = SAT(polygon, polygons[j])
-        if (intersection)
-        {
-          // console.log(intersection);
-          // polygon.move()
-          collisions[i] = true;
-          collisions[j] = true;
-        }
-      } 
-      else 
-      {
-        if (TSAT(polygon, polygons[j]))
-        {
-          // polygon.move()
-          collisions[i] = true;
-          collisions[j] = true;
-        }
+        // console.log(intersection);
+        // polygon.move()
+        collisions[i] = true;
+        collisions[j] = true;
       }
+      // } 
+      // else 
+      // {
+      //   if (TSAT(polygon, polygons[j]))
+      //   {
+      //     // polygon.move()
+      //     collisions[i] = true;
+      //     collisions[j] = true;
+      //   }
+      // }
       // const intersectionrec = AABB(rec, polygons[j]);
       // if (intersectionrec)
       // {

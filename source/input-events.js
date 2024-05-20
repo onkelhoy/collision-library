@@ -16,8 +16,8 @@ class Mouse extends EventTarget {
   constructor(canvas, config) {
     super();
     // x = 0, y = 0
-    this.position = new Vector(0, 0);
-    this.movement = new Vector(0, 0);
+    this.position = Vector.Zero;
+    this.movement = Vector.Zero;
     this.config = config;
 
     this.lastpointerlock = performance.now() - 1000;
@@ -201,12 +201,63 @@ class Keyboard extends EventTarget {
     }));
   }
 }
-class Touch extends EventTarget {
+
+class ExtendedTouch {
+  constructor(touch) {
+    this.position = null;
+    this.movement = null;
+
+    this.start = performance.now();
+    this.end = null;
+
+    this.update(touch);
+  }
+
+  get id() {
+    return this.identifier;
+  }
+
+  update(touch) {
+    this.identifier = touch.identifier;
+    this.screenX = touch.screenX;
+    this.screenY = touch.screenY;
+    this.clientX = touch.clientX;
+    this.clientY = touch.clientY;
+    this.pageX = touch.pageX;
+    this.pageY = touch.pageY;
+    this.radiusX = touch.radiusX;
+    this.radiusY = touch.radiusY;
+    this.rotationAngle = touch.rotationAngle;
+    this.force = touch.force;
+    this.target = touch.target;
+
+    if (this.position === null)
+    {
+      this.movement = Vector.Zero;
+      this.position = new Vector(this.clientX, this.clientY);
+    }
+    else 
+    {
+      const old = this.position.copy();
+      this.position.set(this.clientX, this.clientY);
+      this.movement = this.position.Sub(old);
+    }
+  }
+
+  release() {
+    this.end = performance.now();
+    return this;
+  }
+}
+class Touches extends EventTarget {
   constructor(canvas) {
     super();
-    this.touches = [];
-    this.position = new Vector(0, 0); // first move 
-    this.movement = new Vector(0, 0);
+    this.position = Vector.Zero; // first move 
+    this.movement = Vector.Zero;
+    this.mouse = null;
+
+    this.touches = {};
+    this.changedTouches = [];
     
     canvas.addEventListener("touchstart", this.handletouchstart);
     canvas.addEventListener("touchend",this. handletouchend);
@@ -221,25 +272,98 @@ class Touch extends EventTarget {
 
   // event handlers 
   handletouchstart = (e) => {
-    this.touches = e.touches;
+    this.changedTouches = [];
     
-    console.log("start", e);
+    const oldmouse = this.mouse?.id;
+    for (const eventtouch of e.changedTouches)
+    {
+      const touch = this.touchChange(eventtouch);
+      this.mouse = touch;
+      this.position.set(touch.position);
+      this.movement.set(touch.movement);
+    }
+    
+    if (oldmouse !== this.mouse.id)
+    {
+      this.dispatchEvent(new Event("mouse-down"));
+    }
+    this.dispatchEvent(new Event("down"));
   }
   handletouchend = (e) => {
-    console.log("end",e);
-    this.touches = e.touches;
+    this.changedTouches = [];
 
+    for (const eventtouch of e.changedTouches)
+    {
+      const touch = this.touchChange(eventtouch);
+      touch.release();
+      delete this.touches[touch.id]
+
+      if (touch === this.mouse)
+      {
+        this.position.set(touch.position);
+        this.movement.set(touch.movement);
+        this.mouse = null;
+        this.dispatchEvent(new Event("mouse-up"));
+      }
+    }
+
+    this.dispatchEvent(new Event("up"));
   }
   handletouchmove = (e) => {
-    this.touches = e.touches;
+    this.changedTouches = [];
 
-    console.log("move",e);
+    for (const eventtouch of e.changedTouches)
+    {
+      const touch = this.touchChange(eventtouch);
+
+      if (touch === this.mouse)
+      {
+        this.position.set(touch.position);
+        this.movement.set(touch.movement);
+
+        this.dispatchEvent(new Event("mouse-move"));
+      }
+    }
+
+    this.dispatchEvent(new Event("move"));
   }
   handletouchcancel = (e) => {
-    this.touches = e.touches;
+    this.changedTouches = [];
+    
+    for (const eventtouch of e.changedTouches)
+    {
+      const touch = this.touchChange(eventtouch);
+      touch.release();
 
-    console.log("cancel", e);
+      delete this.touches[touch.id]
 
+      if (touch === this.mouse)
+      {
+        this.mouse = null;
+        this.dispatchEvent(new Event("mouse-up"));
+      }
+    }
+      
+    this.position.set(0, 0);
+    this.movement.set(0, 0);
+
+    this.dispatchEvent(new Event("cancel"));
+  }
+
+  // helper 
+  touchChange(touch) {
+    const id = touch.identifier;
+    if (this.touches[id])
+    {
+      this.touches[id].update(touch);
+    }
+    else 
+    {
+      this.touches[id] = new ExtendedTouch(touch);
+    }
+
+    this.changedTouches.push(this.touches[id]);
+    return this.touches[id];
   }
 }
 export class InputEvents extends EventTarget {
@@ -248,15 +372,9 @@ export class InputEvents extends EventTarget {
     this.config = getSettings(settings);
 
     this.mouse = new Mouse(canvas, this.config);
-    this.touch = new Touch(canvas);
+    this.touch = new Touches(canvas);
     this.keyboard = new Keyboard();
-
-    this.mouse.on("move", this.handlemove);
-    this.mouse.on("down", this.handledown);
-    this.mouse.on("up", this.handleup);
-    this.touch.on("first-move", this.handlemove);
-    this.touch.on("first-down", this.handledown);
-    this.touch.on("first-up", this.handleup);
+    this.position = Vector.Zero;
   }
 
   key(name) {
@@ -266,15 +384,26 @@ export class InputEvents extends EventTarget {
     this.keyboard.on(eventname, callback);
   }
 
-  // event handlers 
-  handlemove = (e) => {
-    this.dispatchEvent(new Event("move"))
-  }
-  handleup = (e) => {
-    this.dispatchEvent(new Event("click"))
-  }
-  handledown = (e) => {
-    this.dispatchEvent(new Event("click-pressed"))
+  on(eventname, callback) {
+    switch (eventname)
+    {
+      case "mouse-move":
+      case "mouse-up":
+      case "mouse-down":
+        this.addEventListener(eventname, callback);
+
+      case "move":
+      case "down":
+      case "up":
+        this.mouse.addEventListener(eventname, callback);
+        this.touch.addEventListener(eventname, callback);
+
+      case "cancel":
+        this.touch.addEventListener(eventname, callback);
+
+      default:
+        this.keyboard.on(eventname, callback);
+    }
   }
 }
 

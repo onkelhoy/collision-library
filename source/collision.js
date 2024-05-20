@@ -196,6 +196,138 @@ export function isPointInPolygonRayCasting(point, polygon) {
   return intersections % 2 === 1;
 }
 
+// /**
+//  * Seperate Axis Theorem : SAT 
+//  * @param {Polygon} a 
+//  * @param {Polygon} b 
+//  */
+// export function SAT(a, b) {
+//   if (!AABB(a.boundary, b.boundary)) return false;
+  
+//   const direction = a.center.sub(b.center);
+
+//   return sat_algorithm(a, b, direction);
+// }
+// function sat_algorithm(a, b, direction) 
+// {
+//   const ainfo = sat_helper(a, b);
+//   if (!ainfo) return false;
+
+//   const binfo = sat_helper(b, a);
+//   if (!binfo) return false;
+
+//   let target = binfo;
+//   if (ainfo.depth < binfo.depth)
+//   {
+//     target = ainfo;
+//   }
+
+//   const normalmag = target.axis.magnitude;
+//   const normal = target.axis.normalise();
+
+//   if (direction.dot(normal) > 0)
+//   {
+//     normal.mul(-1); // flip
+//   }
+
+//   return {
+//     depth: target.depth / normalmag,
+//     normal,
+//   }
+// }
+// function sat_helper(a, b) {
+//   let depth = Number.MAX_SAFE_INTEGER;
+//   let axis = Vector.Zero;
+
+//   for (let i=0; i<a.verticies.length; i++) 
+//   {
+//     const localaxis = Vector.Perpendicular(a.verticies[i], a.verticies[(i+1) % a.verticies.length]).normalise();
+    
+//     const [mina, maxa] = sat_project(a.verticies, localaxis);
+//     const [minb, maxb] = sat_project(b.verticies, localaxis);
+
+//     if (mina >= maxb || minb >= maxa) return false;
+
+//     const localdepth = Math.min(maxb - mina, maxa - minb);
+//     if (localdepth < depth)
+//     {
+//       depth = localdepth;
+//       axis = localaxis;
+//     }
+//   }
+
+//   return {axis, depth};
+// }
+// function sat_project(verticies, axis) {
+//   let min = Number.MAX_SAFE_INTEGER;
+//   let max = Number.MIN_SAFE_INTEGER;
+//   for (const v of verticies) 
+//   {
+//     const projection = v.dot(axis);
+//     if (projection < min) min = projection;
+//     if (projection > max) max = projection;
+//   }
+
+//   return [min, max];
+// }
+
+// export function genericSAT(a, b) {
+//   if (!(a.boundary && b.boundary && AABB(a.boundary, b.boundary)))
+//   {
+//     return false;
+//   }
+
+//   /// check which method should be applied to both a or b 
+//   /// pending on if they have concave or not 
+// }
+
+
+// /**
+//  * (T) triangle SAT : TSAT 
+//  * @param {Polygon} a 
+//  * @param {Polygon} b 
+//  * @returns 
+//  */
+// export function TSAT(a, b) 
+// {
+//   if (!AABB(a.boundary, b.boundary)) return false;
+//   const direction = a.center.sub(b.center);
+
+//   // first for a
+//   const ainfo = tsat_helper(a, b, direction)
+//   if (ainfo)
+//   {
+//     return ainfo;
+//   }
+//   const binfo = tsat_helper(a, b, direction);
+//   if (binfo)
+//   {
+//     return binfo;
+//   }
+
+//   return false;
+// }
+
+// function tsat_helper(a, b, direction) {
+//   const ta = {verticies:[]};
+//   const tb = {verticies:[]};
+
+//   for (let i=0; i<a.triangles.length/3; i++)
+//   {
+//     ta.verticies = a.getTriangle(i);
+
+//     for (let j=0; j<b.triangles.length/3; j++)
+//     {
+//       tb.verticies = b.getTriangle(j);
+
+//       if (sat_algorithm(ta, tb, direction))
+//       {
+//         return true;
+//       }
+//     }
+//   }
+// }
+
 /**
  * Seperate Axis Theorem : SAT 
  * @param {Polygon} a 
@@ -203,7 +335,31 @@ export function isPointInPolygonRayCasting(point, polygon) {
  */
 export function SAT(a, b) {
   if (!AABB(a.boundary, b.boundary)) return false;
+  
+  const direction = a.center.sub(b.center);
 
+  if (a.concave)
+  {
+    if (b.concave)
+    {
+      return sat_concave_concave(a, b, direction);
+    }
+    else 
+    {
+      return sat_concave_convex(a, b, direction);
+    }
+  }
+  else if (b.concave)
+  {
+    return sat_concave_convex(b, a, direction);
+  }
+
+  return sat_convex_convex(a, b, direction);
+}
+
+//#region SAT convex convex
+function sat_convex_convex(a, b, direction) 
+{
   const ainfo = sat_helper(a, b);
   if (!ainfo) return false;
 
@@ -218,7 +374,6 @@ export function SAT(a, b) {
 
   const normalmag = target.axis.magnitude;
   const normal = target.axis.normalise();
-  const direction = a.center.sub(b.center);
 
   if (direction.dot(normal) > 0)
   {
@@ -236,10 +391,10 @@ function sat_helper(a, b) {
 
   for (let i=0; i<a.verticies.length; i++) 
   {
-    const localaxis = Vector.Perpendicular(a.verticies[i], a.verticies[(i+1) % a.verticies.length]);
+    const localaxis = Vector.Perpendicular(a.verticies[i], a.verticies[(i+1) % a.verticies.length]).normalise();
     
-    const [mina, maxa] = sat_projectvertices(a.verticies, localaxis);
-    const [minb, maxb] = sat_projectvertices(b.verticies, localaxis);
+    const [mina, maxa] = sat_project(a.verticies, localaxis);
+    const [minb, maxb] = sat_project(b.verticies, localaxis);
 
     if (mina >= maxb || minb >= maxa) return false;
 
@@ -253,7 +408,7 @@ function sat_helper(a, b) {
 
   return {axis, depth};
 }
-function sat_projectvertices(verticies, axis) {
+function sat_project(verticies, axis) {
   let min = Number.MAX_SAFE_INTEGER;
   let max = Number.MIN_SAFE_INTEGER;
   for (const v of verticies) 
@@ -265,102 +420,46 @@ function sat_projectvertices(verticies, axis) {
 
   return [min, max];
 }
+//#endregion
 
-/**
- * (T) triangle SAT : TSAT 
- * @param {Polygon} a 
- * @param {Polygon} b 
- * @returns 
- */
-export function TSAT(a, b) {
-  if (!AABB(a.boundary, b.boundary)) return false;
-
-  if (sat_trianglehelper(a, b)) return false;
-  
-  return !sat_trianglehelper(b, a);
-}
-
-function sat_trianglehelper(a, b) 
+//#region SAT concave convex
+function sat_concave_convex(a, b, direction)
 {
-  let gaps = 0;
-  for (let i=0; i<a.triangles.length; i+=3)
+  const ta = {verticies:[]};
+
+  for (let i=0; i<a.triangles.length/3; i++)
   {
-    const axises = sat_axises(i, a);
+    ta.verticies = a.getTriangle(i);
 
-    for (const axis of axises) 
+    const intersectioninfo = sat_convex_convex(ta, b, direction);
+    if (intersectioninfo)
     {
-      const [mina, maxa] = sat_projecttriangle(a, i, axis);
-      const [minb, maxb] = sat_projecttriangles(b, axis);
+      return intersectioninfo;
+    }
+  }
+}
+//#endregion
 
-      if (mina >= maxb || minb >= maxa) 
+//#region SAT concave concave
+function sat_concave_concave(a, b, direction)
+{
+  const ta = {verticies:[]};
+  const tb = {verticies:[]};
+
+  for (let i=0; i<a.triangles.length/3; i++)
+  {
+    ta.verticies = a.getTriangle(i);
+
+    for (let j=0; j<b.triangles.length/3; j++)
+    {
+      tb.verticies = b.getTriangle(j);
+
+      const intersectioninfo = sat_convex_convex(ta, tb, direction);
+      if (intersectioninfo)
       {
-        gaps++;
-        break; // this ensures we only have 1 gap per triangle 
+        return intersectioninfo;
       }
     }
   }
-
-  console.log(gaps, a.triangles.length)
-  return gaps === a.triangles.length;
 }
-
-function sat_axises(i, p, cache) {
-  const iva = p.triangles[i];
-  const ivb = p.triangles[i + 1];
-  const ivc = p.triangles[i + 2];
-
-  const axises = [];
-  sat_axis(iva, ivb, p, axises, cache); // a -> b
-  sat_axis(ivb, ivc, p, axises, cache); // b -> c
-  sat_axis(ivc, iva, p, axises, cache); // c -> a
-
-  return axises;
-
-  // without attempt of optimize
-  // return [
-  //   Vector.Perpendicular(p.verticies[iva], p.verticies[ivb]),
-  //   Vector.Perpendicular(p.verticies[ivb], p.verticies[ivc]),
-  //   Vector.Perpendicular(p.verticies[ivc], p.verticies[iva]),
-  // ]
-}
-function sat_axis(a, b, p, axises, cache) {
-  // if (!cache[`${a}-${b}`] && ((a + 1) % p.verticies.length) === b) 
-  if (((a + 1) % p.verticies.length) === b) 
-  {
-    // good candidate a -> b
-    const axis = Vector.Perpendicular(p.verticies[a], p.verticies[b]);
-    axises.push(axis);
-    // cache[`${a}-${b}`] = {
-    //   axis,
-    // }
-  }
-}
-function sat_projecttriangles(p, axis) {
-  let min = Number.MAX_SAFE_INTEGER;
-  let max = Number.MIN_SAFE_INTEGER;
-  for (let i=0; i<p.triangles.length; i+=3)
-  {
-    for (let j=0; j<3; j++)
-    {
-      const v = p.verticies[p.triangles[i + j]];
-      const projection = v.dot(axis);
-      if (projection < min) min = projection;
-      if (projection > max) max = projection;
-    }
-  }
-  
-  return [min, max];
-}
-function sat_projecttriangle(p, triangleindex, axis) {
-  let min = Number.MAX_SAFE_INTEGER;
-  let max = Number.MIN_SAFE_INTEGER;
-  for (let i=0; i<3; i++)
-  {
-    const v = p.verticies[p.triangles[triangleindex + i]];
-    const projection = v.dot(axis);
-    if (projection < min) min = projection;
-    if (projection > max) max = projection;
-  }
-
-  return [min, max];
-}
+//#endregion
