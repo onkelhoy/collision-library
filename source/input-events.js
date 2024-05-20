@@ -285,7 +285,7 @@ class Touches extends EventTarget {
     
     if (oldmouse !== this.mouse.id)
     {
-      this.dispatchEvent(new Event("mouse-down"));
+      this.dispatchEvent(new Event("last-down"));
     }
     this.dispatchEvent(new Event("down"));
   }
@@ -303,7 +303,7 @@ class Touches extends EventTarget {
         this.position.set(touch.position);
         this.movement.set(touch.movement);
         this.mouse = null;
-        this.dispatchEvent(new Event("mouse-up"));
+        this.dispatchEvent(new Event("last-up"));
       }
     }
 
@@ -321,7 +321,7 @@ class Touches extends EventTarget {
         this.position.set(touch.position);
         this.movement.set(touch.movement);
 
-        this.dispatchEvent(new Event("mouse-move"));
+        this.dispatchEvent(new Event("last-move"));
       }
     }
 
@@ -340,7 +340,7 @@ class Touches extends EventTarget {
       if (touch === this.mouse)
       {
         this.mouse = null;
-        this.dispatchEvent(new Event("mouse-up"));
+        this.dispatchEvent(new Event("last-up"));
       }
     }
       
@@ -375,6 +375,33 @@ export class InputEvents extends EventTarget {
     this.touch = new Touches(canvas);
     this.keyboard = new Keyboard();
     this.position = Vector.Zero;
+
+    this.mouse.on("down", this.handledown);
+    this.mouse.on("up", this.handleup);
+    this.mouse.on("move", this.handlemove);
+
+    this.touch.on("last-down", this.handledown);
+    this.touch.on("last-up", this.handleup);
+    this.touch.on("last-move", this.handlemove);
+  }
+
+  handledown = (e) => {
+    this.position = e.target.position;
+    this.movement = e.target.movement;
+
+    this.dispatchEvent(new Event("mouse-down"));
+  }
+  handleup = (e) => {
+    this.position = e.target.position;
+    this.movement = e.target.movement;
+
+    this.dispatchEvent(new Event("mouse-up"));
+  }
+  handlemove = (e) => {
+    this.position = e.target.position;
+    this.movement = e.target.movement;
+
+    this.dispatchEvent(new Event("mouse-move"));
   }
 
   key(name) {

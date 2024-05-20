@@ -1,8 +1,8 @@
 import { Rectangle } from "rectangle";
-import { Vector } from "vector";
 import { isPointInRectangle, AABB } from "collision";
-let c, ctx, timer;
+import { InputEvents } from "input-events";
 
+let c, ctx, timer, events;
 let selected = null;
 let creating = null;
 const rectangles = [];
@@ -14,9 +14,11 @@ window.onload = () => {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  window.addEventListener("mousemove", handlemousemove);
-  window.addEventListener("mousedown", handlemousedown);
-  window.addEventListener("mouseup", handlemouseup);
+  events = new InputEvents(c, { pointerlock: false });
+
+  events.on("mouse-up", handlemouseup);
+  events.on("mouse-down", handlemousedown);
+  events.on("mouse-move", handlemousemove);
 }
 
 function draw() {
@@ -71,24 +73,22 @@ function draw() {
 function handlemousemove(e) {
   if (selected)
   {
-    selected.rectangle.x = e.clientX - selected.offset.x;
-    selected.rectangle.y = e.clientY - selected.offset.y;
+    selected.rectangle.set(e.target.position.Sub(selected.offset))
   }
   else if (creating)
   {
-    creating.b.x = e.clientX;
-    creating.b.y = e.clientY;
+    creating.b.set(e.target.position)
   }
 }
 function handlemousedown(e) {
   // check if selection is free 
   for (const rec of rectangles)
   {
-    if (isPointInRectangle({x:e.clientX,y:e.clientY}, rec))
+    if (isPointInRectangle(e.target.position, rec))
     {
       selected = {
         rectangle: rec,
-        offset: new Vector(e.clientX - rec.x, e.clientY - rec.y),
+        offset: e.target.position.Sub(rec),
       }
       break;
     }
@@ -97,8 +97,8 @@ function handlemousedown(e) {
   if (!selected)
   {
     creating = {
-      a: new Vector(e.clientX, e.clientY),
-      b: new Vector(e.clientX, e.clientY),
+      a: e.target.position.copy(),
+      b: e.target.position.copy(),
     }
   }
 

@@ -1,8 +1,9 @@
 import { Circle } from "circle";
 import { Vector } from "vector";
 import { isPointInCircle, CircleIntersection } from "collision";
+import { InputEvents } from "input-events";
 
-let c, ctx, timer;
+let c, ctx, timer, events;
 let selected = null;
 let creating = null;
 const circles = [];
@@ -15,12 +16,12 @@ window.onload = () => {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  window.addEventListener("mousemove", handlemousemove);
-  window.addEventListener("mousedown", handlemousedown);
-  window.addEventListener("mouseup", handlemouseup);
-}
+  events = new InputEvents(c, { pointerlock: false });
 
-window.Vector = Vector;
+  events.on("mouse-up", handlemouseup);
+  events.on("mouse-down", handlemousedown);
+  events.on("mouse-move", handlemousemove);
+}
 
 function draw() {
   ctx.clearRect(0, 0, c.width, c.height);
@@ -82,31 +83,29 @@ function draw() {
 function handlemousemove(e) {
   if (selected)
   {
-    selected.circle.x = e.clientX - selected.offset.x;
-    selected.circle.y = e.clientY - selected.offset.y;
+    selected.circle.set(e.target.position.Sub(selected.offset));
   }
   else if (creating)
   {
-    creating.r = Vector.Distance(creating, {x:e.clientX, y:e.clientY});
+    creating.r = Vector.Distance(creating, e.target.position);
   }
 }
 function handlemousedown(e) {
   // check if selection is free 
-  const p = {x:e.clientX,y:e.clientY};
   for (const circle of circles)
   {
-    if (isPointInCircle(p, circle))
+    if (isPointInCircle(e.target.position, circle))
     {
       selected = {
         circle,
-        offset: new Vector(e.clientX - circle.x, e.clientY - circle.y),
+        offset: e.target.position.Sub(circle),
       }
     }
   }
 
   if (!selected)
   {
-    creating = new Circle(e.clientX, e.clientY, 0);
+    creating = Circle.toCircle(e.target.position, 0);
   }
 
   draw();

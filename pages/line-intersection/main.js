@@ -1,9 +1,9 @@
 import { Line } from "line";
 import { Circle } from "circle";
-import { Vector } from "vector";
 import { isPointInCircle, LineIntersection, SegmentIntersection } from "collision";
+import { InputEvents } from "input-events";
 
-let c, ctx, timer;
+let c, ctx, timer, events;
 let selected = null;
 let creating = null;
 const lines = [];
@@ -16,9 +16,11 @@ window.onload = () => {
   c.width = window.innerWidth;
   c.height = window.innerHeight;
 
-  window.addEventListener("mousemove", handlemousemove);
-  window.addEventListener("mousedown", handlemousedown);
-  window.addEventListener("mouseup", handlemouseup);
+  events = new InputEvents(c, { pointerlock: false });
+
+  events.on("mouse-up", handlemouseup);
+  events.on("mouse-down", handlemousedown);
+  events.on("mouse-move", handlemousemove);
 
   document.querySelector('select').addEventListener('change', handleselectchange);
 }
@@ -87,34 +89,31 @@ function handleselectchange(e) {
 function handlemousemove(e) {
   if (selected)
   {
-    selected.point.x = e.clientX - selected.offset.x;
-    selected.point.y = e.clientY - selected.offset.y;
+    selected.point = e.target.position.Sub(selected.offset);
   }
   else if (creating)
   {
-    creating.b.x = e.clientX;
-    creating.b.y = e.clientY;
+    creating.b.set(e.target.position);
   }
 }
 function handlemousedown(e) {
   // check if selection is free 
-  const p = {x:e.clientX,y:e.clientY};
   for (const line of lines)
   {
-    if (isPointInCircle(p, Circle.toCircle(line.a, 10)))
+    if (isPointInCircle(e.target.position, Circle.toCircle(line.a, 10)))
     {
       selected = {
         point: line.a,
         line,
-        offset: new Vector(e.clientX - line.a.x, e.clientY - line.a.y),
+        offset: e.target.position.Sub(line.a),
       }
     }
-    else if (isPointInCircle(p, Circle.toCircle(line.b, 10)))
+    else if (isPointInCircle(e.target.position, Circle.toCircle(line.b, 10)))
     {
       selected = {
         point: line.b,
         line,
-        offset: new Vector(e.clientX - line.b.x, e.clientY - line.b.y),
+        offset: e.target.position.Sub(line.b),
       }
     }
   }
@@ -122,8 +121,8 @@ function handlemousedown(e) {
   if (!selected)
   {
     creating = new Line(
-      new Vector(e.clientX, e.clientY),
-      new Vector(e.clientX, e.clientY),
+      e.target.position.copy(),
+      e.target.position.copy(),
     );
   }
 

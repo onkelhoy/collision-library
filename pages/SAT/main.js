@@ -9,7 +9,6 @@ let selected = null;
 let creating = null;
 let events = null;
 const polygons = [];
-let method = "sat";
 
 window.onload = () => {
   c = document.querySelector('canvas');
@@ -51,8 +50,6 @@ function draw() {
       checked[key] = true;
       checked[`${j}x${i}`] = true;
       
-      // if (method === "sat")
-      // {
       const intersection = SAT(polygon, polygons[j])
       if (intersection)
       {
@@ -61,22 +58,6 @@ function draw() {
         collisions[i] = true;
         collisions[j] = true;
       }
-      // } 
-      // else 
-      // {
-      //   if (TSAT(polygon, polygons[j]))
-      //   {
-      //     // polygon.move()
-      //     collisions[i] = true;
-      //     collisions[j] = true;
-      //   }
-      // }
-      // const intersectionrec = AABB(rec, polygons[j]);
-      // if (intersectionrec)
-      // {
-      //   const r = new Rectangle(intersectionrec);
-      //   r.draw(ctx, "red", "rgba(0, 255, 0, 0.5)");
-      // }
     }
 
     if (selected && selected.polygon === polygon)
@@ -102,16 +83,6 @@ function draw() {
 }
 
 // event handlers
-function handleselectchange(e) {
-  e.stopPropagation();
-  e.stopImmediatePropagation();
-  e.preventDefault();
-  
-  const {value} = e.target;
-  method = value;
-  draw();
-  window.cancelAnimationFrame(timer);
-}
 function handlemousemove(e) {
   if (selected)
   {
