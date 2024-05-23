@@ -174,6 +174,12 @@ export class Vector {
 
     return copy;
   }
+  get opposite() {
+    return this.mul(-1);
+  }
+  get Opposite() {
+    return Vector.toVector(this).opposite();
+  }
 
   normalise() {
     const mag = this.magnitude;
@@ -182,6 +188,10 @@ export class Vector {
     this.z /= mag;
 
     return this;
+  }
+
+  toString() {
+    return `(${this.x},${this.y},${this.z})`;
   }
 
   dot(b) {
@@ -267,6 +277,13 @@ export class Vector {
   }
   static get Zero() {
     return new Vector(0, 0, 0);
+  }
+  static get Random() {
+    return new Vector(
+      -1 + Math.random() * 2, 
+      -1 + Math.random() * 2, 
+      -1 + Math.random() * 2,
+    );
   }
 
   static Draw(v, ctx, color = "black", r = 1) {

@@ -463,3 +463,44 @@ function sat_concave_concave(a, b, direction)
   }
 }
 //#endregion
+
+function GJK(a, b) {
+  let direction = Vector.Random; // start b
+
+  let simplex = []; // triangle 
+  let oldsimplex = [];
+  const CSO = {}; // configuration space obstacle
+  while (gjk_notsamesimplex(simplex, oldsimplex))
+  {
+    const pa = gjk_getpoint(a, direction);
+    const pb = gjk_getpoint(b, direction.Opposite);
+
+    const point = pa.Sub(pb);
+    
+  }
+}
+
+function gjk_notsamesimplex(a, b)
+{
+  if (a.length === 0) return true;
+  if (a.length !== b.length) return true;
+  for (let i=0; i<a.length; i++)
+  {
+    if (a[i].toString() !== b[i].toString()) return true;
+  }
+
+  return false; // its the same
+}
+
+/**
+ * Get's the support point to build the CSO
+ * @param {Shape} shape 
+ * @param {Vector} direction 
+ * @returns {Vector} support-point
+ */
+function gjk_supportppoint(shape, direction) {
+  if (shape.supportFunction) 
+  {
+    return shape.supportFunction(direction);
+  }
+}
